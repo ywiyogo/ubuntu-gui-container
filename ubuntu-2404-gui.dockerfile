@@ -3,16 +3,21 @@
 
 FROM ubuntu:24.04
 
-# Prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=en_US.UTF-8
 
-# Basic system utilities and common dependencies
-RUN apt-get update && apt-get install -y \
+# Combined single layer for all apt packages with aggressive cleanup
+RUN apt-get update && apt-get install -y --no-install-recommends \
     # Build essentials
     build-essential \
     cmake \
     ninja-build \
     pkg-config \
+    make \
+    autoconf \
+    automake \
+    libtool \
+    meson \
     # Version control
     git \
     # Basic utilities
@@ -27,11 +32,6 @@ RUN apt-get update && apt-get install -y \
     tmux \
     zip \
     unzip \
-    make \
-    autoconf \
-    automake \
-    libtool \
-    meson \
     strace \
     ltrace \
     # Networking
@@ -43,10 +43,6 @@ RUN apt-get update && apt-get install -y \
     ncurses-term \
     bash-completion \
     sysstat \
-    && rm -rf /var/lib/apt/lists/*
-
-# Development tools and SDKs
-RUN apt-get update && apt-get install -y \
     # C/C++ development
     gdb \
     clang \
@@ -67,8 +63,6 @@ RUN apt-get update && apt-get install -y \
     python3-sklearn \
     python3-cryptography \
     python3-requests \
-    # Go development
-    golang \
     # Video and image processing
     ffmpeg \
     v4l-utils \
@@ -76,10 +70,6 @@ RUN apt-get update && apt-get install -y \
     libopencv-dev \
     # Cryptography dependencies
     libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# GUI and Desktop application support
-RUN apt-get update && apt-get install -y \
     # GUI and graphics development
     libgtk-3-dev \
     libsdl2-dev \
@@ -89,13 +79,13 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-dev \
     libegl1-mesa-dev \
     libglu1-mesa-dev \
-    libgles2-mesa-dev \ 
+    libgles2-mesa-dev \
     mesa-common-dev \
     mesa-utils \
     libvulkan1 \
     vulkan-tools \
     libglx-mesa0 \
-    mesa-vulkan-drivers \   
+    mesa-vulkan-drivers \
     # X11 support
     libx11-dev \
     libxext-dev \
@@ -121,10 +111,9 @@ RUN apt-get update && apt-get install -y \
     libqt5widgets5 \
     libqt5gui5 \
     libqt5waylandcompositor5 \
-    # Font support
+    # Font support (minimal, no CJK)
     fonts-liberation \
     fonts-noto \
-    fonts-noto-cjk \
     # Audio support
     pulseaudio \
     alsa-utils \
@@ -133,31 +122,32 @@ RUN apt-get update && apt-get install -y \
     # Screen sharing and remote desktop
     xvfb \
     x11vnc \
-    && rm -rf /var/lib/apt/lists/*
-
-# ImGui setup
-RUN git clone https://github.com/ocornut/imgui.git /usr/local/imgui
-
-# Setup locale
-RUN apt-get update && apt-get install -y \
+    # Locale
     locales \
     && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/* \
+    && rm -rf /usr/share/doc/* \
+    && rm -rf /usr/share/man/* \
     && locale-gen en_US.UTF-8
-ENV LANG=en_US.UTF-8
+
+# ImGui setup (shallow clone)
+RUN git clone --depth 1 https://github.com/ocornut/imgui.git /usr/local/imgui \
+    && rm -rf /usr/local/imgui/.git
 
 # Setup terminal colors
 RUN echo 'eval "$(dircolors -b)"' >> /etc/bash.bashrc && \
     echo 'alias ls="ls --color=auto"' >> /etc/bash.bashrc && \
     echo 'alias ll="ls -la --color=auto"' >> /etc/bash.bashrc
 
-# Install Rust
-# Switch to the new user
+# Install Rust with minimal profile and cleanup
 USER $USERNAME
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal \
+    && rm -rf /home/$USERNAME/.rustup/toolchains/*/share \
+    && rm -rf /home/$USERNAME/.cargo/registry/cache
 ENV PATH="/home/$USERNAME/.cargo/bin:${PATH}"
 USER root
 
-# Add near the end of the Dockerfile
+# Entrypoint
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

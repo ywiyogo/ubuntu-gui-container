@@ -1,5 +1,6 @@
 # Use your base development environment
-FROM wiyogo/ubuntu2404_on_arch:latest
+ARG BASE_IMAGE=docker.io/wiyogo/ubuntu-2404-gui:latest
+FROM ${BASE_IMAGE}
 
 # Set ROS2 version
 ARG ROS_DISTRO=jazzy
