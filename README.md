@@ -1,12 +1,188 @@
-# Scripts for running Docker
+![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu)
+![ROS2](https://img.shields.io/badge/ROS2-Jazzy-22314E?logo=ros)
+![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?logo=docker)
+![Podman](https://img.shields.io/badge/Podman-Supported-892CA0?logo=podman)
 
-## Enabling GPU support
+# Ubuntu GUI Container
 
-On Arch Linux, need to install the NVIDIA Container Toolkit to enable GPU support in Docker. Please run `sudo pacman -S nvidia-container-toolkit` if the toolkit isn't installed yet.
+Run Ubuntu 24.04 with full GUI support on any Linux distribution using Docker or Podman. Features X11/Wayland passthrough, GPU acceleration (NVIDIA/AMD/Intel), and pre-installed development tools. Ideal for **ROS2 development**, Gazebo simulation, RViz2, and general desktop applications.
 
-## Dealing with Nvidia and libOgre crash on Qt application
+## Features
 
-This is an example of the backtrace running `gdb rviz2`
+- **Universal Compatibility** - Run Ubuntu 24.04 on Arch, Fedora, Debian, or any Linux distro
+- **GUI Support** - X11 and Wayland passthrough for graphical applications
+- **GPU Acceleration** - NVIDIA, AMD, and Intel GPU support with OpenGL/Vulkan
+- **ROS2 Ready** - Pre-configured for ROS2 Jazzy development
+
+## GUI & Graphics Support
+
+### Display Servers
+
+| Server | Support | Notes |
+|--------|---------|-------|
+| X11 | ✅ Full | Native X11 passthrough via `/tmp/.X11-unix` |
+| Wayland | ✅ Full | Wayland socket passthrough with XWayland fallback |
+| XWayland | ✅ Full | For X11 apps running on Wayland hosts |
+
+### Graphics Libraries
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| Mesa | Latest | OpenGL, GLES, EGL implementation |
+| Vulkan | Latest | Modern graphics API with Vulkan tools |
+| GLFW | 3.x | Window and input handling for OpenGL |
+| GLEW | Latest | OpenGL extension loading |
+| SDL2 | 2.x | Cross-platform multimedia library |
+
+### GUI Toolkits
+
+| Toolkit | Version | Notes |
+|---------|---------|-------|
+| Qt5 | 5.x | Widgets, GUI, Wayland compositor support |
+| GTK3 | 3.x | GNOME toolkit with development headers |
+| Dear ImGui | Latest | Immediate-mode GUI (cloned to `/usr/local/imgui`) |
+
+### X11 Libraries
+
+Full X11 development support including:
+- `libx11`, `libxext`, `libxrender` - Core X11
+- `libxinerama`, `libxi`, `libxrandr` - Multi-monitor and input
+- `libxcursor`, `libxtst`, `libxss` - Cursor, testing, screensaver
+- `libxcomposite`, `libxdamage`, `libxfixes` - Compositing extensions
+
+### Audio & Multimedia
+
+- **PulseAudio** - Audio server support
+- **ALSA** - Advanced Linux Sound Architecture
+- **FFmpeg** - Video and audio processing with extra codecs
+
+### Remote Desktop
+
+- **Xvfb** - Virtual framebuffer for headless GUI testing
+- **x11vnc** - VNC server for remote access
+
+## Prerequisites
+
+| Tool | Installation |
+|------|--------------|
+| Docker | `curl -fsSL https://get.docker.com \| sh` |
+| Podman | `sudo pacman -S podman` (Arch) or `sudo apt install podman` (Debian/Ubuntu) |
+
+Optional for NVIDIA GPU support:
+- **Arch:** `sudo pacman -S nvidia-container-toolkit`
+- **Ubuntu:** `sudo apt install nvidia-container-toolkit`
+
+## Quick Start
+
+### Docker
+
+```bash
+# 1. Build base Ubuntu 24.04 image
+./build_docker.sh
+
+# 2. Build ROS2 Jazzy image
+./build_docker.sh -d ros2_jazzy_desktop_dev.dockerfile -n ros2-jazzy-dev
+
+# 3. Run container with GUI support
+./run_docker_for_gui.sh ros2-jazzy-dev
+```
+
+### Podman
+
+```bash
+# 1. Build base Ubuntu 24.04 image
+./build_podman.sh
+
+# 2. Build ROS2 Jazzy image
+./build_podman.sh -d ros2_jazzy_desktop_dev.dockerfile -n ros2-jazzy-dev
+
+# 3. Run container with GUI support
+./run_podman_for_gui.sh ros2-jazzy-dev
+```
+
+## Project Structure
+
+| File | Description |
+|------|-------------|
+| `ubuntu2404_on_arch.dockerfile` | Base Ubuntu 24.04 image with dev tools, GUI libs, and GPU support |
+| `ros2_jazzy_desktop_dev.dockerfile` | ROS2 Jazzy + Gazebo + Nav2 + TurtleBot4 simulator |
+| `build_docker.sh` / `build_podman.sh` | Build container images |
+| `run_docker_for_gui.sh` / `run_podman_for_gui.sh` | Run containers with X11/Wayland passthrough |
+| `entrypoint.sh` | Container entrypoint for user/GPU setup |
+| `ros2_entrypoint.sh` | Sources ROS2 environment on container start |
+
+## Usage
+
+### Building Images
+
+```bash
+# Docker
+./build_docker.sh                                    # Base image
+./build_docker.sh -d ros2_jazzy_desktop_dev.dockerfile -n ros2-jazzy-dev
+
+# Podman
+./build_podman.sh                                    # Base image
+./build_podman.sh -d ros2_jazzy_desktop_dev.dockerfile -n ros2-jazzy-dev
+```
+
+### Running Containers
+
+```bash
+# Docker
+./run_docker_for_gui.sh ros2-jazzy-dev
+
+# Podman
+./run_podman_for_gui.sh ros2-jazzy-dev
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WORK_DIR` | `$HOME` | Working directory inside container |
+| `ROS_DOMAIN_ID` | `8` | ROS2 DDS domain ID |
+
+### Running ROS2 Applications
+
+Inside the container:
+```bash
+# Start RViz2
+rviz2
+
+# Start Gazebo with TurtleBot4
+ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py
+
+# Check ROS2 nodes
+ros2 node list
+```
+
+## Enabling GPU Support
+
+### NVIDIA GPU
+
+On Arch Linux, install the NVIDIA Container Toolkit to enable GPU support in Docker:
+
+```bash
+sudo pacman -S nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+On Ubuntu:
+```bash
+sudo apt install nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+### AMD/Intel GPU
+
+No additional setup required. The container automatically detects and uses `/dev/dri` for GPU access.
+
+## Fixing Nvidia and libOgre Crash on Qt Applications
+
+If RViz2 crashes with a backtrace similar to this:
+
 ```bash
 #0  0x0000779c4c93514d in ?? () from /usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0
 #1  0x0000779c3e8b3943 in ?? () from /usr/lib/x86_64-linux-gnu/libnvidia-glcore.so.565.77
@@ -20,7 +196,8 @@ This is an example of the backtrace running `gdb rviz2`
    from /opt/ros/jazzy/opt/rviz_ogre_vendor/lib/libOgreMain.so.1.12.10
 ```
 
-In order to fix this, `/etc/docker/daemon.json`should be created and contains:
+Create `/etc/docker/daemon.json` with the following content:
+
 ```json
 {
   "runtimes": {
@@ -32,12 +209,23 @@ In order to fix this, `/etc/docker/daemon.json`should be created and contains:
 }
 ```
 
-then restart docker `sudo systemctl restart docker` and add `--runtime nvidia` in the `docker run` argument.
+Then restart Docker and ensure `--runtime nvidia` is included in the `docker run` command (already handled by `run_docker_for_gui.sh`):
 
-## Allowing UDP Multicast for multi robot communication
-
-If the ufw firewall is enabled, the ROS node and topic won't be detected. In order to see the UDP multicast, allow the UDP multicast in localhost. If our local network is has this IP 192.168.8.X, we can allow it using this:
-
+```bash
+sudo systemctl restart docker
 ```
+
+## Allowing UDP Multicast for Multi-Robot Communication
+
+If the UFW firewall is enabled, ROS2 nodes and topics may not be detected across the network. Allow UDP multicast for your local network:
+
+```bash
+# Example: Allow UDP from 192.168.8.0/24 network
 sudo ufw allow in proto udp from 192.168.8.0/24 to any
 ```
+
+Replace `192.168.8.0/24` with your actual network subnet.
+
+## License
+
+MIT License

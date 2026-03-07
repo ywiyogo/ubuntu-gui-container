@@ -1,8 +1,8 @@
 #!/bin/bash
-# Build Docker images from Dockerfiles with customizable image name and tag.
+# Build Podman images from Dockerfiles with customizable image name and tag.
 # Supports building base Ubuntu images and ROS2 development images.
-# Usage: ./build_docker.sh [-d DOCKERFILE] [-n NAME] [-t TAG]
-# Example: ./build_docker.sh -d ros2_jazzy_desktop_dev.dockerfile -n ros2-jazzy-dev
+# Usage: ./build_podman.sh [-d DOCKERFILE] [-n NAME] [-t TAG]
+# Example: ./build_podman.sh -d ros2_jazzy_desktop_dev.dockerfile -n ros2-jazzy-dev
 
 # Record start time for duration calculation
 START_TIME=$(date +%s)
@@ -16,7 +16,7 @@ DEFAULT_DOCKERFILE="ubuntu2404_on_arch.dockerfile"
 # Function to print usage
 print_usage() {
     echo "Usage: $0 [OPTIONS]"
-    echo "Build a Docker image with current user credentials"
+    echo "Build a Podman image with current user credentials"
     echo
     echo "Options:"
     echo "  -d, --dockerfile PATH    Path to Dockerfile (default: $DEFAULT_DOCKERFILE)"
@@ -45,9 +45,9 @@ print_elapsed_time() {
     fi
 }
 
-# Function to get Docker storage location
-get_docker_root() {
-    docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo "/var/lib/docker"
+# Function to get Podman storage location
+get_podman_root() {
+    podman info --format '{{.Store.GraphRoot}}' 2>/dev/null || echo "/var/lib/containers/storage"
 }
 
 # Parse command line arguments
@@ -88,7 +88,7 @@ if [ ! -f "$DOCKERFILE" ]; then
 fi
 
 # Print build information
-echo "Docker Build Configuration:"
+echo "Podman Build Configuration:"
 echo "------------------------"
 echo "Dockerfile: $DOCKERFILE"
 echo "Image Name: $IMAGE_NAME"
@@ -96,14 +96,14 @@ echo "Image Tag:  $IMAGE_TAG"
 echo "------------------------"
 
 # Build the image with build arguments
-docker build \
+podman build \
     -t "$IMAGE_NAME:$IMAGE_TAG" \
     -f "$DOCKERFILE" \
     .
 
 # Check if build was successful
 if [ $? -eq 0 ]; then
-    DOCKER_ROOT=$(get_docker_root)
+    PODMAN_ROOT=$(get_podman_root)
     echo ""
     echo "=========================================="
     echo "Build successful!"
@@ -111,17 +111,17 @@ if [ $? -eq 0 ]; then
     echo "=========================================="
     echo ""
     echo "Storage location:"
-    echo "  $DOCKER_ROOT"
+    echo "  $PODMAN_ROOT"
     echo ""
-    echo "Check disk usage: docker system df"
+    echo "Check disk usage: podman system df"
     echo ""
     echo "Cleanup commands:"
-    echo "  docker system prune        # Remove stopped containers, unused networks"
-    echo "  docker system prune -a     # Also remove unused images"
-    echo "  docker volume prune        # Remove unused volumes"
+    echo "  podman system prune        # Remove stopped containers, unused images"
+    echo "  podman system prune -a     # Remove all unused images"
+    echo "  podman volume prune        # Remove unused volumes"
     echo ""
     echo "Run the container:"
-    echo "  ./run_docker_for_gui.sh $IMAGE_NAME:$IMAGE_TAG"
+    echo "  ./run_podman_for_gui.sh $IMAGE_NAME:$IMAGE_TAG"
 else
     echo ""
     echo "=========================================="
