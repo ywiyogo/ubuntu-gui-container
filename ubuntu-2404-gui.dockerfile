@@ -3,6 +3,11 @@
 
 FROM ubuntu:24.04
 
+# Build arguments for user configuration
+ARG USERNAME=user
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=en_US.UTF-8
 
@@ -138,6 +143,14 @@ RUN git clone --depth 1 https://github.com/ocornut/imgui.git /usr/local/imgui \
 RUN echo 'eval "$(dircolors -b)"' >> /etc/bash.bashrc && \
     echo 'alias ls="ls --color=auto"' >> /etc/bash.bashrc && \
     echo 'alias ll="ls -la --color=auto"' >> /etc/bash.bashrc
+
+# Create non-root user with sudo access
+RUN groupadd -g ${USER_GID} ${USERNAME} && \
+    useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash ${USERNAME} && \
+    apt-get update && apt-get install -y sudo && \
+    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/${USERNAME} && \
+    rm -rf /var/lib/apt/lists/* && \
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
 
 # Install Rust with minimal profile and cleanup
 USER $USERNAME

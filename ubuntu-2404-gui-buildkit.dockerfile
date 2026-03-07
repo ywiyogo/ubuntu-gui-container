@@ -13,8 +13,14 @@
 
 FROM ubuntu:24.04
 
+# Build arguments for user configuration
+ARG USERNAME=user
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=en_US.UTF-8
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Combined single layer for all apt packages with aggressive cleanup
 # BuildKit will parallelize the download and extraction of packages
@@ -161,10 +167,13 @@ RUN --mount=type=cache,target=/tmp/rust-cache \
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Create user with proper home directory
+RUN useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash ${USERNAME}
+
 # Entrypoint
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Set working directory
-WORKDIR /root
+WORKDIR /home/${USERNAME}

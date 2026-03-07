@@ -72,6 +72,7 @@ if [ "$(id -u)" = "0" ]; then
     log "Switching to user 1000"
     exec su -c "$*" 1000
 else
-    log "Already running as non-root user: $@"
-    exec bash
+    log "Already running as non-root user: $*"
+    # Execute the passed command (e.g., /bin/bash) with all arguments
+    exec "$@"
 fi

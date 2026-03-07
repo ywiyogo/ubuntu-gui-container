@@ -117,6 +117,53 @@ else
     )
 fi
 
+# Configure render group for GPU access
+# Note: Use GID instead of group name to avoid name resolution issues in container
+GROUP_ARGS=()
+if [ -d "/dev/dri" ]; then
+    if getent group render > /dev/null 2>&1; then
+        # Check if current user is in render group
+        if groups | grep -q '\brender\b'; then
+            # Use GID directly to avoid group name resolution issues
+            RENDER_GID=$(getent group render | cut -d: -f3)
+            GROUP_ARGS=(--group-add "$RENDER_GID")
+        else
+            echo "=========================================="
+            echo "Error: Current user is not in 'render' group"
+            echo "=========================================="
+            echo ""
+            echo "Your system has the 'render' group, but you're not a member."
+            echo ""
+            echo "To fix this issue, run:"
+            echo "  sudo usermod -aG render \$USER"
+            echo ""
+            echo "Then apply the change in your current shell:"
+            echo "  newgrp render"
+            echo ""
+            echo "Or logout and login again for the change to take effect."
+            echo ""
+            exit 1
+        fi
+    else
+        echo "=========================================="
+        echo "Error: 'render' group not found"
+        echo "=========================================="
+        echo ""
+        echo "Your system doesn't have the 'render' group."
+        echo ""
+        echo "To fix this issue, run:"
+        echo "  sudo groupadd -f render"
+        echo "  sudo usermod -aG render \$USER"
+        echo ""
+        echo "Then apply the change in your current shell:"
+        echo "  newgrp render"
+        echo ""
+        echo "Or logout and login again for the change to take effect."
+        echo ""
+        exit 1
+    fi
+fi
+
 # Allow X11 local connections (only needed for X11, not Wayland)
 if [ "$XDG_SESSION_TYPE" != "wayland" ]; then
     xhost +local: 2>/dev/null || true
@@ -172,7 +219,7 @@ exec podman run --rm -it \
     --net=host \
     --ipc=host \
     --user "$(id -u):$(id -g)" \
-    --group-add render \
+    "${GROUP_ARGS[@]}" \
     --name "$CONTAINER_NAME" \
     -e "USER=$USER" \
     -e "HOME=$HOME" \
