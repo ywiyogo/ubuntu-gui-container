@@ -2,6 +2,7 @@
 ![ROS2](https://img.shields.io/badge/ROS2-Jazzy-22314E?logo=ros)
 ![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?logo=docker)
 ![Podman](https://img.shields.io/badge/Podman-Supported-892CA0?logo=podman)
+![VSCode Dev Container](https://img.shields.io/badge/VSCode-Dev%20Container-007ACC?logo=visualstudiocode)
 
 # Ubuntu GUI Container
 
@@ -100,6 +101,26 @@ Optional for NVIDIA GPU support:
 ./run_podman_for_gui.sh ros2-jazzy-dev
 ```
 
+### VSCode Dev Container
+
+For VSCode users, this project includes Dev Container support with automatic workspace setup:
+
+1. **Prerequisites:**
+   - Install [VSCode](https://code.visualstudio.com/)
+   - Install [Dev Container extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+   - Build the ROS2 image first (see Docker Quick Start above)
+
+2. **Open in Container:**
+   - Open this folder in VSCode
+   - Press `F1` → "Dev Containers: Reopen in Container"
+   - Wait for container setup (rosdep, workspace build)
+
+3. **Start Developing:**
+   - Terminal auto-sources ROS2 environment
+   - Extensions pre-installed (C++, CMake, ROS, Python, Docker, GitLens)
+
+See [`.devcontainer/README.md`](.devcontainer/README.md) for detailed instructions.
+
 ## Project Structure
 
 | File | Description |
@@ -110,6 +131,7 @@ Optional for NVIDIA GPU support:
 | `run_docker_for_gui.sh` / `run_podman_for_gui.sh` | Run containers with X11/Wayland passthrough |
 | `entrypoint.sh` | Container entrypoint for user/GPU setup |
 | `ros2_entrypoint.sh` | Sources ROS2 environment on container start |
+| `.devcontainer/` | VSCode Dev Container configuration |
 
 ## Usage
 
@@ -225,6 +247,81 @@ sudo ufw allow in proto udp from 192.168.8.0/24 to any
 ```
 
 Replace `192.168.8.0/24` with your actual network subnet.
+
+## Disk Space Management
+
+Container images and data can consume significant disk space over time. The build scripts automatically detect and display your storage location. Here's how to monitor and clean up:
+
+### Docker
+
+**Check storage location:**
+```bash
+docker info --format '{{.DockerRootDir}}'
+```
+
+**Check disk usage:**
+```bash
+docker system df       # Summary
+docker system df -v    # Detailed
+```
+
+**Cleanup commands:**
+```bash
+docker system prune           # Remove stopped containers, unused networks, dangling images
+docker system prune -a        # Also remove unused images (use with caution)
+docker volume prune           # Remove unused volumes
+docker image prune -a         # Remove all unused images
+docker container prune        # Remove all stopped containers
+```
+
+### Podman
+
+**Check storage location:**
+```bash
+podman info --format '{{.Store.GraphRoot}}'
+```
+
+**Check disk usage:**
+```bash
+podman system df       # Summary
+podman system df -v    # Detailed
+```
+
+**Cleanup commands:**
+```bash
+podman system prune           # Remove stopped containers, unused images
+podman system prune -a        # Remove all unused images
+podman volume prune           # Remove unused volumes
+podman image prune            # Remove unused images
+podman container prune        # Remove all stopped containers
+```
+
+### Typical Disk Usage
+
+| Component | Size Range |
+|-----------|------------|
+| Base Ubuntu 24.04 image | ~1-2 GB |
+| ROS2 Jazzy Desktop | ~3-5 GB |
+| ROS2 + Gazebo + Nav2 | ~6-10 GB |
+| Full dev environment | ~10-15 GB |
+
+### Moving Docker Data Directory
+
+If your root partition is full, you can move Docker's data directory:
+
+```bash
+# Stop Docker
+sudo systemctl stop docker
+
+# Move data to another drive
+sudo mv /var/lib/docker /path/to/new/location
+
+# Create symlink
+sudo ln -s /path/to/new/location /var/lib/docker
+
+# Restart Docker
+sudo systemctl start docker
+```
 
 ## License
 
