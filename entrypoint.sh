@@ -62,7 +62,7 @@ setup_gpu_access() {
 # Main entry point logic
 if [ "$(id -u)" = "0" ]; then
     log "Running as root, setting up environment"
-    
+
     setup_runtime_dir
     setup_display_permissions
     setup_audio_permissions
@@ -72,6 +72,6 @@ if [ "$(id -u)" = "0" ]; then
     log "Switching to user 1000"
     exec su -c "$*" 1000
 else
-    log "Already running as non-root user"
-    exec "$@"
+    log "Already running as non-root user: $@"
+    exec bash
 fi

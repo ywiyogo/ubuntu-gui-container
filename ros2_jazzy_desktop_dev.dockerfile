@@ -33,6 +33,11 @@ RUN apt-get update && apt-get install -y \
     python3-vcstool \
     && rm -rf /var/lib/apt/lists/*
 
+# Install packages for ROS2 tutorials
+RUN apt-get update && apt-get install -y \
+    ros-${ROS_DISTRO}-turtle-tf2-py \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN rosdep init && \
   rosdep update --rosdistro $ROS_DISTRO
 
