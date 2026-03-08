@@ -42,11 +42,11 @@ print_elapsed_time() {
     local seconds=$((duration % 60))
     
     if [ $hours -gt 0 ]; then
-        printf "Build time: %dh %dm %ds" $hours $minutes $seconds
+        printf "Build time: %dh %dm %ds\n" $hours $minutes $seconds
     elif [ $minutes -gt 0 ]; then
-        printf "Build time: %dm %ds" $minutes $seconds
+        printf "Build time: %dm %ds\n" $minutes $seconds
     else
-        printf "Build time: %ds" $seconds
+        printf "Build time: %ds\n" $seconds
     fi
 }
 
@@ -120,12 +120,13 @@ if [ -n "$BASE_IMAGE" ]; then
     echo "Base Image: $BASE_IMAGE"
 fi
 echo "BuildKit:   $BUILDKIT"
+echo "User:       $USER (UID: $(id -u), GID: $(id -g))"
 echo "------------------------"
 
 # Build the image with build arguments
-BUILD_ARGS=""
+BUILD_ARGS="--build-arg USERNAME=$USER --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g)"
 if [ -n "$BASE_IMAGE" ]; then
-    BUILD_ARGS="--build-arg BASE_IMAGE=$BASE_IMAGE"
+    BUILD_ARGS="$BUILD_ARGS --build-arg BASE_IMAGE=$BASE_IMAGE"
 fi
 
 # BuildKit-specific flags

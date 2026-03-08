@@ -33,6 +33,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
     && rm -rf /tmp/*
 
+# Fix for OpenJDK manpage installation failure in Ubuntu 24.04 Docker
+# Dependency chain: ros-jazzy-desktop -> libpcl-dev -> libvtk9-dev -> default-jdk -> openjdk-21-jdk
+# VTK provides multi-language bindings (Python, Tcl, Java), and libvtk9-dev requires libvtk9-java
+# OpenJDK postinst script fails if /usr/share/man/man1 doesn't exist
+RUN mkdir -p /usr/share/man/man1
+
 # Install ROS2 packages and Gazebo simulator with cache mount
 # Do NOT use --no-install-recommends for meta-packages (ros-desktop, navigation2, etc.)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \

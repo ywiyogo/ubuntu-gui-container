@@ -167,8 +167,9 @@ RUN --mount=type=cache,target=/tmp/rust-cache \
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Create user with proper home directory
-RUN useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash ${USERNAME}
+# Remove default ubuntu user to free UID 1000, then create user
+RUN userdel -r ubuntu 2>/dev/null || true \
+    && useradd -m -u ${USER_UID} -U -s /bin/bash ${USERNAME}
 
 # Entrypoint
 COPY entrypoint.sh /usr/local/bin/
