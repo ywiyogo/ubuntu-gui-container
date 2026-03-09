@@ -213,12 +213,24 @@ fi
 #
 # Note: AppImage applications are not supported inside Podman containers
 
+# Detect rootless Podman and set user flag accordingly
+# In rootless mode: container UID 0 maps to host user, so use --user 0:0
+# In rootful mode: use actual UID/GID
+USER_ARGS=()
+if podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null | grep -q "true"; then
+    # Rootless Podman: container root (UID 0) maps to host user
+    USER_ARGS=(--user "0:0")
+else
+    # Rootful Podman: use actual UID/GID
+    USER_ARGS=(--user "$(id -u):$(id -g)")
+fi
+
 exec podman run --rm -it \
     --security-opt=no-new-privileges \
     --init \
     --net=host \
     --ipc=host \
-    --user "$(id -u):$(id -g)" \
+    "${USER_ARGS[@]}" \
     "${GROUP_ARGS[@]}" \
     --name "$CONTAINER_NAME" \
     -e "USER=$USER" \
