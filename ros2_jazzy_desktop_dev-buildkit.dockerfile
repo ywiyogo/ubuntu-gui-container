@@ -79,6 +79,23 @@ RUN --mount=type=cache,target=/root/.ros,sharing=locked \
     rosdep init || true \
     && rosdep update --rosdistro $ROS_DISTRO
 
+# Install NVIDIA Container Toolkit for Podman CDI GPU passthrough
+# This provides nvidia-cdi-hook and nvidia-ctk used by run_podman_for_gui.sh
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit.gpg \
+    && chmod a+r /usr/share/keyrings/nvidia-container-toolkit.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/$(dpkg --print-architecture) /" > /etc/apt/sources.list.d/nvidia-container-toolkit.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nvidia-container-toolkit \
+    && rm -rf /tmp/*
+
+# Remove Mesa EGL vendor file to prevent AMDGPU driver initialization.
+# When using NVIDIA GPU, Mesa's libglvnd probe tries to load the AMD driver
+# on /dev/dri/card0, causing errors. Hiding the vendor file stops the probe.
+RUN mv /usr/share/glvnd/egl_vendor.d/50_mesa.json \
+       /usr/share/glvnd/egl_vendor.d/50_mesa.json.bak 2>/dev/null || true
+
 # Add entrypoint for sourcing the ROS2 setup.bash
 COPY ./ros2_entrypoint.sh /
 RUN chmod +x /ros2_entrypoint.sh

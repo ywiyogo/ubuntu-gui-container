@@ -19,19 +19,24 @@ set -e
 detect_gpu_args() {
     # Check for NVIDIA GPU
     if lspci 2>/dev/null | grep -qi nvidia && command -v nvidia-smi &>/dev/null; then
-        echo "--gpus all --runtime nvidia"
+        # Ensure NVIDIA CDI specification exists for Podman
+        if command -v nvidia-ctk &>/dev/null; then
+            if [ ! -d "/var/run/cdi" ] || [ -z "$(ls -A /var/run/cdi 2>/dev/null)" ]; then
+                echo "Generating NVIDIA CDI specification..."
+                sudo nvidia-ctk cdi generate --output=/var/run/cdi/nvidia.json 2>/dev/null || true
+            fi
+        fi
+        # Use Podman-compatible CDI device flag
+        echo "--device=nvidia.com/gpu=all"
         return 0
     fi
-    
+
     # Check for AMD/Intel GPU (via DRI)
     if [ -d "/dev/dri" ] && [ -n "$(ls -A /dev/dri 2>/dev/null)" ]; then
-        # For AMD/Intel, we use device passthrough
-        # Note: devcontainer.json doesn't support --device in runArgs directly
-        # Instead, we use mounts for /dev/dri
-        echo ""
+        echo "--device=/dev/dri --device=/dev/kfd"
         return 0
     fi
-    
+
     # No GPU detected
     echo ""
 }

@@ -245,6 +245,11 @@ sudo systemctl restart docker
 ### AMD/Intel GPU
 
 No additional setup required. The container automatically detects and uses `/dev/dri` for GPU access.
+You can deactivate dedicated GPU with `--gpu=none`:
+
+```bash
+./run_podman_for_gui.sh ros2-jazzy-dev --gpu=none
+```
 
 ## Fixing Nvidia and libOgre Crash on Qt Applications
 

@@ -12,8 +12,7 @@
   "runArgs": [
     "--net=host",
     "--ipc=host",
-    "--gpus=all",
-    "--runtime=nvidia"
+    "--device=nvidia.com/gpu=all"
   ],
 
   "mounts": [
